@@ -86,7 +86,7 @@
 
 - 递归扫描所有共享目录，按扩展名白名单过滤
 - 图片：`jpg jpeg png gif webp bmp heic heif tif tiff`；视频：`mp4 mov mkv avi webm 3gp m4v`
-- 产出 `FileEntry{name, size, folder(父文件夹名), absPath}`
+- 产出 `FileEntry{name, size, folder(父文件夹名), absPath}`；直接位于共享目录根下的文件，`folder` 为该共享目录自身的文件夹名（如 `D:/照片/a.jpg` 的 folder 为 `照片`）
 - 忽略隐藏文件、`.part` 临时文件
 
 ### 4.5 DiffEngine（纯函数）
@@ -100,14 +100,14 @@
 
 对每个待下载文件：
 
-1. 按共享目录列表顺序，在每个共享目录树内递归（BFS，同层按名称排序）查找第一个名为 `file.folder` 的目录 → 命中即为目标目录
+1. 按共享目录列表顺序，在每个共享目录树内查找第一个名为 `file.folder` 的目录（候选包含共享目录本身及其所有子目录；BFS，同层按名称排序）→ 命中即为目标目录
 2. 全部未命中 → 默认接收目录
 3. 下载写入 `<目标>/<name>.picsync.part`，完成后 rename 为正式文件名
 4. rename 前发现目标文件已存在（竞态）→ 删除临时文件，跳过，计为成功
 
 ### 4.7 SyncEngine
 
-- 下载队列，并发 2~3
+- 下载队列，并发 3
 - 逐文件进度（已收字节/总字节）+ 总进度回调
 - 失败（网络错误、尺寸不符、IO 错误）进失败列表；磁盘满则中止整个队列
 - 支持对失败列表一键重试
