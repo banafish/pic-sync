@@ -91,7 +91,19 @@ class HttpServer {
   }
 
   void _registerPair(Router r) {
-    // Task 8 实现 POST /pair
+    r.post('/pair', (Request req) async {
+      try {
+        final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+        final peerId = body['deviceId'] as String?;
+        final peerName = (body['name'] as String?) ?? '未知设备';
+        if (peerId == null) return Response(400);
+        final token = await onPairRequest(peerId, peerName);
+        if (token == null) return Response(403);
+        return _json({'token': token});
+      } catch (_) {
+        return Response(403);
+      }
+    });
   }
 
   // shelf 的 headers 不区分大小写，这里统一用小写键读取
