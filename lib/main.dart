@@ -7,6 +7,7 @@ import 'services/settings_store.dart';
 import 'ui/app_state.dart';
 import 'ui/home_page.dart';
 import 'ui/pair_dialog.dart';
+import 'ui/permission_gate.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -32,7 +33,7 @@ class PicSyncApp extends StatelessWidget {
           title: '图片同步',
           navigatorKey: navigatorKey,
           theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-          home: const HomePage(),
+          home: const PermissionGate(child: HomePage()),
         ),
       );
 }

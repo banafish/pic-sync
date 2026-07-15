@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import '../models/announce.dart';
 import '../models/device.dart';
 
@@ -24,6 +25,13 @@ class DiscoveryService {
   List<Device> get currentDevices => _devices.values.toList();
 
   Future<void> start() async {
+    if (Platform.isAndroid) {
+      try {
+        await const MethodChannel('picsync/multicast').invokeMethod<void>('acquire');
+      } catch (_) {
+        // 拿不到锁也继续：多数设备前台仍可收包
+      }
+    }
     _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, kDiscoveryPort,
         reuseAddress: true);
     _socket!.broadcastEnabled = true;
@@ -44,6 +52,11 @@ class DiscoveryService {
     _pruneTimer?.cancel();
     _socket?.close();
     _socket = null;
+    if (Platform.isAndroid) {
+      try {
+        await const MethodChannel('picsync/multicast').invokeMethod<void>('release');
+      } catch (_) {}
+    }
   }
 
   void _broadcast() {
