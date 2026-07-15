@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Auto-generated Flutter plugin build files
+.plugin_copies/
+android/.plugin_symlinks/
+
