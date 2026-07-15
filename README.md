@@ -1,17 +1,40 @@
-# pic_sync
+# PicSync 图片同步
 
-A new Flutter project.
+局域网内多设备图片/视频同步工具（Android + Windows）。手动发起、单向拉取：
+在一台设备上浏览另一台设备共享的图片，勾选后拉到本机。
 
-## Getting Started
+## 核心规则
 
-This project is a starting point for a Flutter application.
+- 只按**文件名**比对（不分文件夹、不分大小写）：对方有而本机没有的文件名才会同步
+- 落盘位置：优先放进本机与「对方文件所在文件夹」**同名**的文件夹；没有则放**默认接收目录**
+- 删除不会传播：一边删了，再次同步还会拉回来（目标是"到处都有"）
 
-A few resources to get you started if this is your first Flutter project:
+## 构建
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+前置：Flutter stable；Windows 构建需 Visual Studio C++ 桌面工作负载；Android 构建需 Android SDK。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter build windows --release   # 产物 build/windows/x64/runner/Release/
+flutter build apk --release       # 产物 build/app/outputs/flutter-apk/app-release.apk
+```
+
+## 使用
+
+1. 两台设备连同一局域网，都打开本应用
+2. 首次使用先进右上角「我的共享」：添加共享目录、设置默认接收目录
+3. 主页会自动列出对方设备（收不到广播时用「添加 IP」手动输入，支持 `IP` 或 `IP:端口`）
+4. 点击设备 → 首次需在**对方**屏幕上点「同意」配对 → 勾选要同步的文件夹/文件 → 开始同步
+
+## 网络说明
+
+- UDP 45654 用于设备发现；HTTP 45655（起）用于传输，端口占用时自动 +1
+- Windows 首次运行会弹防火墙授权，请勾选允许**专用网络**
+- Android 需授予「所有文件访问」权限（应用内会引导）；安装 APK 需允许未知来源
+- 传输为局域网内明文 HTTP，请勿在不信任的网络中使用
+
+## 已知边界（按设计）
+
+- 同名但内容不同的文件视为同一张，不会同步
+- 两台设备必须同时打开应用才能互相发现与传输
+- 同步过程中断可以重试；失败的文件整个重新下载（无断点续传）
