@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/device.dart';
+import '../models/manifest.dart';
 import '../services/http_client.dart';
 import '../services/sync_engine.dart';
 import 'app_state.dart';
@@ -23,6 +24,7 @@ class _SelectPageState extends State<SelectPage> {
   SelectionModel? _model;
   String _status = '正在连接…';
   String? _error;
+  final Set<String> _expandedFolders = {};
 
   @override
   void initState() {
@@ -35,6 +37,7 @@ class _SelectPageState extends State<SelectPage> {
       _error = null;
       _data = null;
       _model = null;
+      _expandedFolders.clear();
     });
     final app = context.read<AppState>();
     try {
@@ -179,76 +182,126 @@ class _SelectPageState extends State<SelectPage> {
     }
     return ListenableBuilder(
       listenable: m,
-      builder: (_, _) => ListView(
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
+      builder: (_, _) => CustomScrollView(
+        slivers: [
           // Summary Header
-          Card(
-            color: colorScheme.secondaryContainer.withAlpha(100),
+          SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(Icons.folder_copy_outlined, color: colorScheme.secondary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '准备从「${widget.device.name}」选择要同步的项目',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          for (final entry in m.groups.entries)
-            Card(
-              child: Theme(
-                data: theme.copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  leading: Checkbox(
-                    tristate: true,
-                    value: m.folderFullySelected(entry.key)
-                        ? true
-                        : (m.selectedCountIn(entry.key) == 0 ? false : null),
-                    onChanged: (_) => m.toggleFolder(entry.key),
-                  ),
-                  title: Text(
-                    entry.key,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: Text(
-                    '缺 ${entry.value.length} / 共 '
-                    '${_data!.remotePerFolder[entry.key] ?? entry.value.length}，'
-                    '已选 ${m.selectedCountIn(entry.key)}',
-                    style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                  ),
-                  children: [
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    for (final f in entry.value)
-                      CheckboxListTile(
-                        dense: true,
-                        secondary: Icon(
-                          _getFileIcon(f.name),
-                          size: 20,
-                          color: colorScheme.primary,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: Card(
+                color: colorScheme.secondaryContainer.withAlpha(100),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.folder_copy_outlined, color: colorScheme.secondary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '准备从「${widget.device.name}」选择要同步的项目',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSecondaryContainer,
+                          ),
                         ),
-                        value: m.isSelected(f),
-                        onChanged: (_) => m.toggleFile(f),
-                        title: Text(f.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                        subtitle: Text(formatBytes(f.size)),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
+          ),
+
+          for (final entry in m.groups.entries)
+            _buildFolderSliverGroup(m, entry.key, entry.value),
+
+          const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
         ],
       ),
+    );
+  }
+
+  Widget _buildFolderSliverGroup(
+    SelectionModel m,
+    String folderName,
+    List<ManifestFile> files,
+  ) {
+    final isExpanded = _expandedFolders.contains(folderName);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _FolderHeaderDelegate(
+            folderName: folderName,
+            fileCount: files.length,
+            totalRemoteCount: _data!.remotePerFolder[folderName] ?? files.length,
+            selectedCount: m.selectedCountIn(folderName),
+            isFullySelected: m.folderFullySelected(folderName),
+            isExpanded: isExpanded,
+            onToggleSelect: () => m.toggleFolder(folderName),
+            onToggleExpand: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedFolders.remove(folderName);
+                } else {
+                  _expandedFolders.add(folderName);
+                }
+              });
+            },
+            theme: theme,
+          ),
+        ),
+        if (isExpanded)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final f = files[index];
+                  final isLast = index == files.length - 1;
+                  return Material(
+                    color: colorScheme.surface,
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: isLast
+                          ? const BorderRadius.vertical(bottom: Radius.circular(12))
+                          : BorderRadius.zero,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CheckboxListTile(
+                          dense: true,
+                          secondary: Icon(
+                            _getFileIcon(f.name),
+                            size: 20,
+                            color: colorScheme.primary,
+                          ),
+                          value: m.isSelected(f),
+                          onChanged: (_) => m.toggleFile(f),
+                          title: Text(f.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          subtitle: Text(formatBytes(f.size)),
+                        ),
+                        if (!isLast)
+                          Divider(
+                            height: 1,
+                            indent: 16,
+                            endIndent: 16,
+                            color: colorScheme.outlineVariant.withAlpha(80),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+                childCount: files.length,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -261,5 +314,115 @@ class _SelectPageState extends State<SelectPage> {
       return Icons.image_outlined;
     }
     return Icons.insert_drive_file_outlined;
+  }
+}
+
+class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _FolderHeaderDelegate({
+    required this.folderName,
+    required this.fileCount,
+    required this.totalRemoteCount,
+    required this.selectedCount,
+    required this.isFullySelected,
+    required this.isExpanded,
+    required this.onToggleSelect,
+    required this.onToggleExpand,
+    required this.theme,
+  });
+
+  final String folderName;
+  final int fileCount;
+  final int totalRemoteCount;
+  final int selectedCount;
+  final bool isFullySelected;
+  final bool isExpanded;
+  final VoidCallback onToggleSelect;
+  final VoidCallback onToggleExpand;
+  final ThemeData theme;
+
+  @override
+  double get minExtent => 68.0;
+
+  @override
+  double get maxExtent => 68.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final colorScheme = theme.colorScheme;
+    final isPinned = overlapsContent || shrinkOffset > 0;
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: colorScheme.surfaceContainerHigh,
+        elevation: isPinned ? 3 : 1,
+        shadowColor: Colors.black.withAlpha(50),
+        shape: RoundedRectangleBorder(
+          borderRadius: isExpanded
+              ? const BorderRadius.vertical(top: Radius.circular(12))
+              : BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onToggleExpand,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                Checkbox(
+                  tristate: true,
+                  value: isFullySelected
+                      ? true
+                      : (selectedCount == 0 ? false : null),
+                  onChanged: (_) => onToggleSelect(),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        folderName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '缺 $fileCount / 共 $totalRemoteCount，已选 $selectedCount',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: onToggleExpand,
+                  tooltip: isExpanded ? '收起' : '展开',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _FolderHeaderDelegate oldDelegate) {
+    return oldDelegate.folderName != folderName ||
+        oldDelegate.fileCount != fileCount ||
+        oldDelegate.totalRemoteCount != totalRemoteCount ||
+        oldDelegate.selectedCount != selectedCount ||
+        oldDelegate.isFullySelected != isFullySelected ||
+        oldDelegate.isExpanded != isExpanded ||
+        oldDelegate.theme != theme;
   }
 }
