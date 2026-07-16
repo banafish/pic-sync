@@ -134,9 +134,7 @@ class _SelectPageState extends State<SelectPage> {
                     builder: (_, _) => FilledButton(
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        shape: const StadiumBorder(),
                       ),
                       onPressed: m.selectedCount == 0 ? null : _startSync,
                       child: Text(

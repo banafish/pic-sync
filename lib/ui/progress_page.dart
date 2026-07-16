@@ -58,11 +58,13 @@ class _ProgressPageState extends State<ProgressPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final hasError = failed > 0 || widget.engine.abortedDiskFull;
+
     return PopScope(
       canPop: finished,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(finished ? '同步完成' : '正在同步…'),
+          title: Text(finished ? (hasError ? '同步有失败' : '同步完成') : '正在同步…'),
           automaticallyImplyLeading: finished,
         ),
         body: Column(
@@ -91,15 +93,29 @@ class _ProgressPageState extends State<ProgressPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: finished ? colorScheme.primaryContainer : colorScheme.surfaceContainerHigh,
+                            color: !finished
+                                ? colorScheme.surfaceContainerHigh
+                                : hasError
+                                    ? colorScheme.errorContainer
+                                    : colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            finished ? '传完' : '传输中',
+                            !finished
+                                ? '传输中'
+                                : widget.engine.abortedDiskFull
+                                    ? '已中止'
+                                    : hasError
+                                        ? '有失败'
+                                        : '已传完',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: finished ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                              color: !finished
+                                  ? colorScheme.onSurfaceVariant
+                                  : hasError
+                                      ? colorScheme.onErrorContainer
+                                      : colorScheme.onPrimaryContainer,
                             ),
                           ),
                         ),
@@ -193,6 +209,7 @@ class _ProgressPageState extends State<ProgressPage> {
                             style: FilledButton.styleFrom(
                               backgroundColor: colorScheme.error,
                               padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: const StadiumBorder(),
                             ),
                             onPressed: _retry,
                             child: Text('重试失败项（$failed）'),
@@ -204,6 +221,7 @@ class _ProgressPageState extends State<ProgressPage> {
                         child: FilledButton.tonal(
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: const StadiumBorder(),
                           ),
                           onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
                           child: const Text('完成'),

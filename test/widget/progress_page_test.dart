@@ -54,13 +54,16 @@ void main() {
         home: ProgressPage(engine: engine, files: [mf('ok.jpg'), mf('bad.jpg')])));
     await tester.pumpAndSettle();
 
-    expect(find.text('同步完成'), findsOneWidget);
+    expect(find.text('同步有失败'), findsOneWidget);
+    expect(find.text('有失败'), findsOneWidget);
     expect(find.textContaining('成功 1'), findsOneWidget);
     expect(find.textContaining('失败 1'), findsOneWidget);
     expect(find.text('模拟失败'), findsOneWidget);
 
     await tester.tap(find.textContaining('重试失败项'));
     await tester.pumpAndSettle();
+    expect(find.text('同步完成'), findsOneWidget);
+    expect(find.text('已传完'), findsOneWidget);
     expect(find.textContaining('失败 0'), findsOneWidget);
     expect(find.textContaining('重试失败项'), findsNothing);
   });
