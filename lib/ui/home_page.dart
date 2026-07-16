@@ -13,58 +13,251 @@ class HomePage extends StatelessWidget {
     final app = context.watch<AppState>();
     final devices = app.devices;
     final manualHosts = app.settings.manualHosts;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('图片同步'), actions: [
-        IconButton(
-          icon: const Icon(Icons.folder_shared),
-          tooltip: '我的共享',
-          onPressed: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const ShareSettingsPage())),
-        ),
-      ]),
-      body: ListView(children: [
-        if (app.startupError != null)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(app.startupError!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      appBar: AppBar(
+        title: const Text('图片同步'),
+        actions: [
+          IconButton.filledTonal(
+            icon: const Icon(Icons.folder_shared_outlined),
+            tooltip: '我的共享',
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ShareSettingsPage())),
           ),
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text('本机：${app.settings.deviceName}'
-              '${app.serverPort != null ? '（端口 ${app.serverPort}）' : ''}'),
-        ),
-        const Divider(height: 1),
-        if (devices.isEmpty && manualHosts.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(
-                child: Text(
-                    '未发现设备。\n请确认对方设备也打开了本应用，\n或用右下角按钮手动添加对方 IP。\n\n首次使用请先到右上角「我的共享」\n添加共享目录并设置默认接收目录。',
-                    textAlign: TextAlign.center)),
+          const SizedBox(width: 12),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 88),
+        children: [
+          if (app.startupError != null)
+            Card(
+              color: colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        app.startupError!,
+                        style: TextStyle(color: colorScheme.onErrorContainer),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // 本机状态 Hero Banner
+          Card(
+            clipBehavior: Clip.antiAlias,
+            elevation: 0,
+            color: colorScheme.primaryContainer.withAlpha(120),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: colorScheme.primary.withAlpha(40),
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.smartphone,
+                      color: colorScheme.onPrimary,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '本机设备在线',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '本机：${app.settings.deviceName}'
+                          '${app.serverPort != null ? '（端口 ${app.serverPort}）' : ''}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        for (final d in devices)
-          ListTile(
-            leading: Icon(d.manual ? Icons.lan : Icons.devices),
-            title: Text(d.name),
-            subtitle: Text('${d.host}:${d.httpPort}'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _openDevice(context, app, d),
-          ),
-        for (final host in manualHosts)
-          ListTile(
-            leading: const Icon(Icons.lan),
-            title: Text(host),
-            subtitle: const Text('手动添加'),
-            trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => app.removeManualHost(host)),
-            onTap: () => _openManual(context, app, host),
-          ),
-      ]),
+
+          const SizedBox(height: 12),
+
+          if (devices.isEmpty && manualHosts.isEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.devices_other_rounded,
+                        size: 48,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '未发现设备。\n请确认对方设备也打开了本应用，\n或用右下角按钮手动添加对方 IP。\n\n首次使用请先到右上角「我的共享」\n添加共享目录并设置默认接收目录。',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        height: 1.5,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          if (devices.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 6),
+              child: Text(
+                '已发现网络设备 (${devices.length})',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            for (final d in devices)
+              Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: colorScheme.primaryContainer,
+                    child: Icon(
+                      d.manual ? Icons.lan_outlined : Icons.devices_rounded,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(
+                    d.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${d.host}:${d.httpPort}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  onTap: () => _openDevice(context, app, d),
+                ),
+              ),
+          ],
+
+          if (manualHosts.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
+              child: Text(
+                '手动添加设备 (${manualHosts.length})',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            for (final host in manualHosts)
+              Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: colorScheme.secondaryContainer,
+                    child: Icon(
+                      Icons.lan,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  title: Text(
+                    host,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  subtitle: const Text('手动添加 IP'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    color: colorScheme.error,
+                    onPressed: () => app.removeManualHost(host),
+                  ),
+                  onTap: () => _openManual(context, app, host),
+                ),
+              ),
+          ],
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
         label: const Text('添加 IP'),
+        elevation: 3,
         onPressed: () => _addManual(context, app),
       ),
     );

@@ -55,6 +55,9 @@ class _ProgressPageState extends State<ProgressPage> {
     final failed = results?.where((r) => r.status == SyncStatus.failed).length ?? p?.failed ?? 0;
     final totalBytes = p?.totalBytes ?? 0;
     final receivedBytes = p?.receivedBytes ?? 0;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return PopScope(
       canPop: finished,
       child: Scaffold(
@@ -62,65 +65,152 @@ class _ProgressPageState extends State<ProgressPage> {
           title: Text(finished ? '同步完成' : '正在同步…'),
           automaticallyImplyLeading: finished,
         ),
-        body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(children: [
-              LinearProgressIndicator(
-                  value: totalBytes == 0 ? (finished ? 1.0 : null) : receivedBytes / totalBytes),
-              const SizedBox(height: 8),
-              Text('${formatBytes(receivedBytes)} / ${formatBytes(totalBytes)}'),
-              const SizedBox(height: 4),
-              Text('成功 $done · 失败 $failed · 共 ${widget.files.length}'),
-              if (widget.engine.abortedDiskFull)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text('磁盘空间不足，同步已中止',
-                      style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                ),
-              if (!finished && p?.currentName != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text('正在下载：${p!.currentName}',
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
-            ]),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: results == null
-                ? const SizedBox.shrink()
-                : ListView(children: [
-                    for (final item in results)
-                      ListTile(
-                        dense: true,
-                        leading: _icon(context, item.status),
-                        title: Text(item.file.name),
-                        subtitle: item.error == null
-                            ? null
-                            : Text(item.error!, maxLines: 2, overflow: TextOverflow.ellipsis),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        minHeight: 10,
+                        value: totalBytes == 0 ? (finished ? 1.0 : null) : receivedBytes / totalBytes,
                       ),
-                  ]),
-          ),
-        ]),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${formatBytes(receivedBytes)} / ${formatBytes(totalBytes)}',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: finished ? colorScheme.primaryContainer : colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            finished ? '传完' : '传输中',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: finished ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '成功 $done · 失败 $failed · 共 ${widget.files.length}',
+                      style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                    ),
+                    if (widget.engine.abortedDiskFull)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          '磁盘空间不足，同步已中止',
+                          style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    if (!finished && p?.currentName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '正在下载：${p!.currentName}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: results == null
+                  ? const SizedBox.shrink()
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      children: [
+                        for (final item in results)
+                          Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: ListTile(
+                              dense: true,
+                              leading: _icon(context, item.status),
+                              title: Text(item.file.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                              subtitle: item.error == null
+                                  ? null
+                                  : Text(
+                                      item.error!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: colorScheme.error),
+                                    ),
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
         bottomNavigationBar: !finished
             ? null
             : SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(children: [
-                    if (failed > 0) ...[
-                      Expanded(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      if (failed > 0) ...[
+                        Expanded(
                           child: FilledButton(
-                              onPressed: _retry, child: Text('重试失败项（$failed）'))),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.error,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: _retry,
+                            child: Text('重试失败项（$failed）'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
                         child: FilledButton.tonal(
-                            onPressed: () =>
-                                Navigator.of(context).popUntil((r) => r.isFirst),
-                            child: const Text('完成'))),
-                  ]),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                          child: const Text('完成'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
       ),
@@ -128,11 +218,11 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   Widget _icon(BuildContext context, SyncStatus s) => switch (s) {
-        SyncStatus.pending => const Icon(Icons.schedule),
+        SyncStatus.pending => Icon(Icons.schedule, color: Theme.of(context).colorScheme.outline),
         SyncStatus.downloading => const SizedBox(
             width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-        SyncStatus.done => const Icon(Icons.check_circle, color: Colors.green),
-        SyncStatus.skipped => const Icon(Icons.skip_next),
-        SyncStatus.failed => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+        SyncStatus.done => const Icon(Icons.check_circle_rounded, color: Colors.green),
+        SyncStatus.skipped => Icon(Icons.skip_next_rounded, color: Theme.of(context).colorScheme.outline),
+        SyncStatus.failed => Icon(Icons.error_rounded, color: Theme.of(context).colorScheme.error),
       };
 }

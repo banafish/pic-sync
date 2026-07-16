@@ -39,12 +39,45 @@ class _PairDialogState extends State<PairDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-        title: const Text('配对请求'),
-        content: Text('设备「${widget.peerName}」请求访问你的图片。'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('拒绝')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('同意')),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return AlertDialog(
+      icon: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.phonelink_ring_rounded,
+          size: 32,
+          color: colorScheme.onPrimaryContainer,
+        ),
+      ),
+      title: const Text('配对请求', textAlign: TextAlign.center),
+      content: Text(
+        '设备「${widget.peerName}」请求访问你的图片。',
+        textAlign: TextAlign.center,
+      ),
+      actionsAlignment: MainAxisAlignment.spaceEvenly,
+      actions: [
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('拒绝'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('同意'),
+        ),
+      ],
+    );
+  }
 }

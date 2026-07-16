@@ -47,29 +47,70 @@ class _PermissionGateState extends State<PermissionGate> with WidgetsBindingObse
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (granted) return widget.child;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.folder_shared, size: 64),
-            const SizedBox(height: 16),
-            const Text('需要「所有文件访问」权限',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text(
-              '本应用需要读写你选择的图片文件夹，才能在设备间同步图片。\n请在接下来的系统页面中授予「所有文件访问」权限。',
-              textAlign: TextAlign.center,
+          child: Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.folder_shared,
+                      size: 56,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    '需要「所有文件访问」权限',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '本应用需要读写你选择的图片文件夹，才能在设备间同步图片。\n请在接下来的系统页面中授予「所有文件访问」权限。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await Permission.manageExternalStorage.request();
+                        await _check();
+                      },
+                      child: const Text(
+                        '去授权',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () async {
-                await Permission.manageExternalStorage.request();
-                await _check();
-              },
-              child: const Text('去授权'),
-            ),
-          ]),
+          ),
         ),
       ),
     );
