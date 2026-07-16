@@ -15,6 +15,26 @@ class SelectionModel extends ChangeNotifier {
   bool isSelected(ManifestFile f) => _selected.contains(f.path);
   int get selectedCount => _selected.length;
 
+  int get totalMissingCount =>
+      groups.values.fold(0, (sum, files) => sum + files.length);
+
+  bool get isAllSelected =>
+      totalMissingCount > 0 && selectedCount == totalMissingCount;
+
+  void selectAll() {
+    for (final g in groups.values) {
+      for (final f in g) {
+        _selected.add(f.path);
+      }
+    }
+    notifyListeners();
+  }
+
+  void deselectAll() {
+    _selected.clear();
+    notifyListeners();
+  }
+
   int selectedCountIn(String folder) =>
       (groups[folder] ?? const []).where(isSelected).length;
 
