@@ -67,4 +67,37 @@ void main() {
     expect(find.textContaining('失败 0'), findsOneWidget);
     expect(find.textContaining('重试失败项'), findsNothing);
   });
+
+  testWidgets('按文件夹归类展示且可折叠/展开', (tester) async {
+    final engine = SyncEngine(
+      client: FakeClient(),
+      shareDirs: const [],
+      defaultRecvDir: Directory.systemTemp.path,
+    );
+    final f1 = ManifestFile(path: 'p1', name: 'photo1.jpg', folder: '相册A', size: 100);
+    final f2 = ManifestFile(path: 'p2', name: 'photo2.jpg', folder: '相册B', size: 200);
+
+    await tester.pumpWidget(MaterialApp(
+      home: ProgressPage(engine: engine, files: [f1, f2]),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('相册A'), findsOneWidget);
+    expect(find.text('相册B'), findsOneWidget);
+    expect(find.text('photo1.jpg'), findsOneWidget);
+    expect(find.text('photo2.jpg'), findsOneWidget);
+
+    // 折叠相册A
+    await tester.tap(find.text('相册A'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('photo1.jpg'), findsNothing);
+    expect(find.text('photo2.jpg'), findsOneWidget);
+
+    // 重新展开相册A
+    await tester.tap(find.text('相册A'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('photo1.jpg'), findsOneWidget);
+  });
 }

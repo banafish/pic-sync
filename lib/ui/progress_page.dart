@@ -17,6 +17,7 @@ class _ProgressPageState extends State<ProgressPage> {
   StreamSubscription<SyncProgress>? _sub;
   SyncProgress? _last;
   List<SyncItem>? _results;
+  final Set<String> _collapsedFolders = {};
 
   @override
   void initState() {
@@ -171,28 +172,7 @@ class _ProgressPageState extends State<ProgressPage> {
             Expanded(
               child: results == null
                   ? const SizedBox.shrink()
-                  : ListView(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      children: [
-                        for (final item in results)
-                          Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            child: ListTile(
-                              dense: true,
-                              leading: _icon(context, item.status),
-                              title: Text(item.file.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                              subtitle: item.error == null
-                                  ? null
-                                  : Text(
-                                      item.error!,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(color: colorScheme.error),
-                                    ),
-                            ),
-                          ),
-                      ],
-                    ),
+                  : _buildGroupedList(results),
             ),
           ],
         ),
@@ -235,6 +215,188 @@ class _ProgressPageState extends State<ProgressPage> {
     );
   }
 
+  Widget _buildGroupedList(List<SyncItem> results) {
+    final groups = <String, List<SyncItem>>{};
+    for (final item in results) {
+      groups.putIfAbsent(item.file.folder, () => []).add(item);
+    }
+
+    final theme = Theme.of(context);
+
+    return CustomScrollView(
+      slivers: [
+        const SliverPadding(padding: EdgeInsets.only(top: 8)),
+        for (final entry in groups.entries)
+          _buildFolderSliverGroup(theme, entry.key, entry.value),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+      ],
+    );
+  }
+
+  Widget _buildFolderSliverGroup(ThemeData theme, String folderName, List<SyncItem> items) {
+    final isExpanded = !_collapsedFolders.contains(folderName);
+    final doneCount = items.where((i) => i.status == SyncStatus.done).length;
+    final failedCount = items.where((i) => i.status == SyncStatus.failed).length;
+    final colorScheme = theme.colorScheme;
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _ProgressFolderHeaderDelegate(
+            folderName: folderName,
+            totalCount: items.length,
+            doneCount: doneCount,
+            failedCount: failedCount,
+            isExpanded: isExpanded,
+            onToggleExpand: () {
+              setState(() {
+                if (isExpanded) {
+                  _collapsedFolders.add(folderName);
+                } else {
+                  _collapsedFolders.remove(folderName);
+                }
+              });
+            },
+            theme: theme,
+          ),
+        ),
+        if (isExpanded)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final item = items[index];
+                  final isLast = index == items.length - 1;
+                  return _buildFileTile(context, item, isLast, colorScheme);
+                },
+                childCount: items.length,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFileTile(BuildContext context, SyncItem item, bool isLast, ColorScheme colorScheme) {
+    final f = item.file;
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: isLast
+            ? const BorderRadius.vertical(bottom: Radius.circular(16))
+            : BorderRadius.zero,
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withAlpha(50),
+          width: 0.5,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                _buildFileIconAvatar(f.name, colorScheme),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        f.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      if (item.error != null)
+                        Text(
+                          item.error!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: colorScheme.error, fontSize: 12),
+                        )
+                      else
+                        Text(
+                          formatBytes(f.size),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _icon(context, item.status),
+              ],
+            ),
+          ),
+          if (!isLast)
+            Divider(
+              height: 1,
+              indent: 56,
+              endIndent: 12,
+              color: colorScheme.outlineVariant.withAlpha(40),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileIconAvatar(String name, ColorScheme colorScheme) {
+    final lower = name.toLowerCase();
+    IconData icon;
+    Color bg;
+    Color fg;
+
+    if (lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.avi')) {
+      icon = Icons.movie_rounded;
+      bg = Colors.purple.withAlpha(25);
+      fg = Colors.purple;
+    } else if (lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.heic')) {
+      icon = Icons.image_rounded;
+      bg = colorScheme.primary.withAlpha(25);
+      fg = colorScheme.primary;
+    } else if (lower.endsWith('.mp3') ||
+        lower.endsWith('.wav') ||
+        lower.endsWith('.flac') ||
+        lower.endsWith('.aac')) {
+      icon = Icons.audiotrack_rounded;
+      bg = Colors.teal.withAlpha(25);
+      fg = Colors.teal;
+    } else {
+      icon = Icons.insert_drive_file_rounded;
+      bg = Colors.orange.withAlpha(25);
+      fg = Colors.orange;
+    }
+
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: 20, color: fg),
+    );
+  }
+
   Widget _icon(BuildContext context, SyncStatus s) => switch (s) {
         SyncStatus.pending => Icon(Icons.schedule, color: Theme.of(context).colorScheme.outline),
         SyncStatus.downloading => const SizedBox(
@@ -244,3 +406,156 @@ class _ProgressPageState extends State<ProgressPage> {
         SyncStatus.failed => Icon(Icons.error_rounded, color: Theme.of(context).colorScheme.error),
       };
 }
+
+class _ProgressFolderHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _ProgressFolderHeaderDelegate({
+    required this.folderName,
+    required this.totalCount,
+    required this.doneCount,
+    required this.failedCount,
+    required this.isExpanded,
+    required this.onToggleExpand,
+    required this.theme,
+  });
+
+  final String folderName;
+  final int totalCount;
+  final int doneCount;
+  final int failedCount;
+  final bool isExpanded;
+  final VoidCallback onToggleExpand;
+  final ThemeData theme;
+
+  @override
+  double get minExtent => 64.0;
+
+  @override
+  double get maxExtent => 64.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final colorScheme = theme.colorScheme;
+    final isPinned = overlapsContent || shrinkOffset > 0;
+    final hasFailed = failedCount > 0;
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+      child: Material(
+        color: hasFailed
+            ? colorScheme.errorContainer.withAlpha(80)
+            : colorScheme.surfaceContainerHigh,
+        elevation: isPinned ? 3 : 0.5,
+        shadowColor: Colors.black.withAlpha(40),
+        shape: RoundedRectangleBorder(
+          borderRadius: isExpanded
+              ? const BorderRadius.vertical(top: Radius.circular(16))
+              : BorderRadius.circular(16),
+          side: BorderSide(
+            color: hasFailed
+                ? colorScheme.error.withAlpha(80)
+                : colorScheme.outlineVariant.withAlpha(60),
+            width: 1,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onToggleExpand,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: hasFailed
+                        ? colorScheme.error.withAlpha(25)
+                        : colorScheme.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isExpanded
+                        ? Icons.folder_open_rounded
+                        : Icons.folder_rounded,
+                    color: hasFailed
+                        ? colorScheme.error
+                        : colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        folderName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: '已完成 $doneCount / 共 $totalCount'),
+                            if (hasFailed) ...[
+                              const TextSpan(text: '  ·  '),
+                              TextSpan(
+                                text: '$failedCount 项失败',
+                                style: TextStyle(
+                                  color: colorScheme.error,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 22,
+                  ),
+                  onPressed: onToggleExpand,
+                  tooltip: isExpanded ? '收起' : '展开',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _ProgressFolderHeaderDelegate oldDelegate) {
+    return oldDelegate.folderName != folderName ||
+        oldDelegate.totalCount != totalCount ||
+        oldDelegate.doneCount != doneCount ||
+        oldDelegate.failedCount != failedCount ||
+        oldDelegate.isExpanded != isExpanded ||
+        oldDelegate.theme != theme;
+  }
+}
+
