@@ -9,7 +9,12 @@ import '../services/http_server.dart' as srv;
 import '../services/settings_store.dart';
 
 class AppState extends ChangeNotifier {
-  AppState({required this.store, required this.settings});
+  AppState({required this.store, required this.settings}) {
+    if (settings.defaultRecvDir.isNotEmpty &&
+        !settings.shareDirs.contains(settings.defaultRecvDir)) {
+      settings.shareDirs.add(settings.defaultRecvDir);
+    }
+  }
 
   final SettingsStore store;
   final Settings settings;
@@ -109,12 +114,22 @@ class AppState extends ChangeNotifier {
 
   Future<void> removeShareDir(String path) async {
     settings.shareDirs.remove(path);
+    if (settings.defaultRecvDir == path) {
+      settings.defaultRecvDir = '';
+    }
     await store.save(settings);
     notifyListeners();
   }
 
   Future<void> setDefaultRecvDir(String path) async {
+    final oldPath = settings.defaultRecvDir;
+    if (oldPath.isNotEmpty && oldPath != path) {
+      settings.shareDirs.remove(oldPath);
+    }
     settings.defaultRecvDir = path;
+    if (path.isNotEmpty && !settings.shareDirs.contains(path)) {
+      settings.shareDirs.add(path);
+    }
     await store.save(settings);
     notifyListeners();
   }

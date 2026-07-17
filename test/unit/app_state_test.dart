@@ -63,4 +63,34 @@ void main() {
     expect(pairCalls, 1);
     await server.stop();
   });
+
+  test('setDefaultRecvDir 自动加入 shareDirs 且替换旧默认目录', () async {
+    final app = await makeApp();
+    await app.setDefaultRecvDir('D:/收到1');
+    expect(app.settings.defaultRecvDir, 'D:/收到1');
+    expect(app.settings.shareDirs, ['D:/收到1']);
+
+    await app.setDefaultRecvDir('D:/收到2');
+    expect(app.settings.defaultRecvDir, 'D:/收到2');
+    expect(app.settings.shareDirs, ['D:/收到2']);
+
+    final reloaded = await SettingsStore(p.join(tmp.path, 'settings.json')).load();
+    expect(reloaded.defaultRecvDir, 'D:/收到2');
+    expect(reloaded.shareDirs, ['D:/收到2']);
+  });
+
+  test('removeShareDir 删除默认目录时同时清空 defaultRecvDir', () async {
+    final app = await makeApp();
+    await app.setDefaultRecvDir('D:/收到');
+    await app.addShareDir('D:/其它共享');
+    expect(app.settings.shareDirs, ['D:/收到', 'D:/其它共享']);
+
+    await app.removeShareDir('D:/收到');
+    expect(app.settings.shareDirs, ['D:/其它共享']);
+    expect(app.settings.defaultRecvDir, '');
+
+    final reloaded = await SettingsStore(p.join(tmp.path, 'settings.json')).load();
+    expect(reloaded.defaultRecvDir, '');
+    expect(reloaded.shareDirs, ['D:/其它共享']);
+  });
 }

@@ -72,12 +72,18 @@ void main() {
     expect(app.settings.shareDirs, ['D:/照片1', 'D:/照片2']);
   });
 
-  testWidgets('设置默认接收目录', (tester) async {
+  testWidgets('设置与更变默认接收目录自动同步共享目录，删除共享目录清空默认接收目录', (tester) async {
     final app = (await tester.runAsync(makeApp))!;
     await tester.pumpWidget(wrap(app, ShareSettingsPage(picker: FakePicker('D:/收到'))));
     expect(find.textContaining('未设置'), findsOneWidget);
     await tapWithIo(tester, find.text('默认接收目录'));
     expect(app.settings.defaultRecvDir, 'D:/收到');
-    expect(find.text('D:/收到'), findsOneWidget);
+    expect(app.settings.shareDirs, ['D:/收到']);
+    expect(find.text('D:/收到'), findsNWidgets(2));
+
+    await tapWithIo(tester, find.byIcon(Icons.delete_outline));
+    expect(app.settings.shareDirs, isEmpty);
+    expect(app.settings.defaultRecvDir, '');
+    expect(find.textContaining('未设置'), findsOneWidget);
   });
 }
