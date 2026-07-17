@@ -16,7 +16,7 @@ void main() {
     await seed.writeAsString('hello');
     server = srv.HttpServer(
       shareDirs: () => [tmp.path],
-      deviceInfo: () => (deviceId: 'srv-id', name: '服务端'),
+      deviceInfo: () => (deviceId: 'srv-id', name: '服务端', deviceType: 'desktop'),
       validateToken: (t) => t == 'good-token',
       onPairRequest: (id, name) async => null,
     );

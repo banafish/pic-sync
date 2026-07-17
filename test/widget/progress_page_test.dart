@@ -17,8 +17,8 @@ class FakeClient implements PeerClient {
   final Set<String> failedOnce = {};
 
   @override
-  Future<({String deviceId, String name})> fetchInfo() async =>
-      (deviceId: 'x', name: 'x');
+  Future<({String deviceId, String name, String deviceType})> fetchInfo() async =>
+      (deviceId: 'x', name: 'x', deviceType: 'phone');
   @override
   Future<String> pair(String myDeviceId, String myName) async => 't';
   @override

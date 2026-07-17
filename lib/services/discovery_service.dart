@@ -11,7 +11,7 @@ class DiscoveryService {
   DiscoveryService({required this.selfInfo, required this.httpPort, DateTime Function()? nowFn})
       : nowFn = nowFn ?? DateTime.now;
 
-  final ({String deviceId, String name}) Function() selfInfo;
+  final ({String deviceId, String name, String deviceType}) Function() selfInfo;
   final int Function() httpPort;
   final DateTime Function() nowFn;
 
@@ -61,8 +61,12 @@ class DiscoveryService {
 
   void _broadcast() {
     final info = selfInfo();
-    final msg = AnnounceMessage(deviceId: info.deviceId, name: info.name, httpPort: httpPort())
-        .encode();
+    final msg = AnnounceMessage(
+      deviceId: info.deviceId,
+      name: info.name,
+      deviceType: info.deviceType,
+      httpPort: httpPort(),
+    ).encode();
     final data = utf8.encode(msg); // 中文设备名需 UTF-8 编码
     _socket?.send(data, InternetAddress('255.255.255.255'), kDiscoveryPort);
   }
@@ -76,6 +80,7 @@ class DiscoveryService {
       name: msg.name,
       host: senderHost,
       httpPort: msg.httpPort,
+      deviceType: msg.deviceType,
       lastSeen: nowFn(),
     );
     _emit();

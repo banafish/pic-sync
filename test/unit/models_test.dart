@@ -20,11 +20,17 @@ void main() {
 
   group('AnnounceMessage', () {
     test('编解码往返', () {
-      final msg = const AnnounceMessage(deviceId: 'd1', name: '小米', httpPort: 45655);
+      final msg = const AnnounceMessage(
+        deviceId: 'd1',
+        name: '小米',
+        deviceType: 'desktop',
+        httpPort: 45655,
+      );
       final back = AnnounceMessage.tryParse(msg.encode());
       expect(back, isNotNull);
       expect(back!.deviceId, 'd1');
       expect(back.name, '小米');
+      expect(back.deviceType, 'desktop');
       expect(back.httpPort, 45655);
     });
     test('非本应用报文返回 null', () {

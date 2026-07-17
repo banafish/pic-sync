@@ -24,7 +24,7 @@ void main() {
     issued.clear();
     server = srv.HttpServer(
       shareDirs: () => [remote.path],
-      deviceInfo: () => (deviceId: 'srv-id', name: 'S'),
+      deviceInfo: () => (deviceId: 'srv-id', name: 'S', deviceType: 'desktop'),
       validateToken: (t) => t != null && issued.contains(t),
       onPairRequest: (id, name) async {
         final t = 'tok-${issued.length}';

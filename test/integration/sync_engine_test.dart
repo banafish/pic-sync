@@ -15,7 +15,8 @@ class DiskFullClient implements PeerClient {
   @override
   int get port => 1;
   @override
-  Future<({String deviceId, String name})> fetchInfo() async => (deviceId: 'x', name: 'x');
+  Future<({String deviceId, String name, String deviceType})> fetchInfo() async =>
+      (deviceId: 'x', name: 'x', deviceType: 'phone');
   @override
   Future<String> pair(String myDeviceId, String myName) async => 't';
   @override
@@ -50,7 +51,7 @@ void main() {
     await Directory(p.join(local.path, '相册', '旅行')).create(recursive: true);
     server = srv.HttpServer(
       shareDirs: () => [remote.path],
-      deviceInfo: () => (deviceId: 'srv', name: 'S'),
+      deviceInfo: () => (deviceId: 'srv', name: 'S', deviceType: 'desktop'),
       validateToken: (t) => t == 'tok',
       onPairRequest: (_, _) async => 'tok',
     );

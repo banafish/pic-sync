@@ -45,7 +45,7 @@ void main() {
     var pairCalls = 0;
     final server = srv.HttpServer(
       shareDirs: () => [],
-      deviceInfo: () => (deviceId: 'srv-id', name: 'S'),
+      deviceInfo: () => (deviceId: 'srv-id', name: 'S', deviceType: 'desktop'),
       validateToken: (t) => t == 'issued',
       onPairRequest: (id, name) async {
         pairCalls++;

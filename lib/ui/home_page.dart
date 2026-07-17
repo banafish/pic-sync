@@ -165,7 +165,7 @@ class HomePage extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            d.manual ? Icons.lan_outlined : Icons.smartphone_rounded,
+                            iconForDevice(d.deviceType),
                             color: colorScheme.primary,
                             size: 24,
                           ),
@@ -640,7 +640,7 @@ class _RadarPulseAvatarState extends State<_RadarPulseAvatar>
           ],
         ),
         child: Icon(
-          Icons.smartphone_rounded,
+          iconForDevice(defaultDeviceType()),
           color: colorScheme.onPrimary,
           size: 28,
         ),
@@ -748,4 +748,11 @@ class _GuideStepRow extends StatelessWidget {
       ],
     );
   }
+}
+
+IconData iconForDevice(String? deviceType) {
+  if (deviceType == 'desktop' || deviceType == 'pc') {
+    return Icons.desktop_windows_rounded;
+  }
+  return Icons.smartphone_rounded;
 }

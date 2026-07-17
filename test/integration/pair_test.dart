@@ -15,7 +15,7 @@ void main() {
   test('同意配对返回 token', () async {
     final server = srv.HttpServer(
       shareDirs: () => [],
-      deviceInfo: () => (deviceId: 'srv', name: 'S'),
+      deviceInfo: () => (deviceId: 'srv', name: 'S', deviceType: 'phone'),
       validateToken: (_) => false,
       onPairRequest: (id, name) async => 'issued-token',
     );
@@ -30,7 +30,7 @@ void main() {
   test('拒绝配对返回 403', () async {
     final server = srv.HttpServer(
       shareDirs: () => [],
-      deviceInfo: () => (deviceId: 'srv', name: 'S'),
+      deviceInfo: () => (deviceId: 'srv', name: 'S', deviceType: 'phone'),
       validateToken: (_) => false,
       onPairRequest: (id, name) async => null,
     );

@@ -28,14 +28,22 @@ class AppState extends ChangeNotifier {
     try {
       final s = srv.HttpServer(
         shareDirs: () => settings.shareDirs,
-        deviceInfo: () => (deviceId: settings.deviceId, name: settings.deviceName),
+        deviceInfo: () => (
+          deviceId: settings.deviceId,
+          name: settings.deviceName,
+          deviceType: defaultDeviceType(),
+        ),
         validateToken: (t) => t != null && settings.issuedTokens.containsValue(t),
         onPairRequest: handlePairRequest,
       );
       serverPort = await s.start();
       server = s;
       final d = DiscoveryService(
-        selfInfo: () => (deviceId: settings.deviceId, name: settings.deviceName),
+        selfInfo: () => (
+          deviceId: settings.deviceId,
+          name: settings.deviceName,
+          deviceType: defaultDeviceType(),
+        ),
         httpPort: () => serverPort!,
       );
       _devSub = d.devices.listen(updateDevices);
@@ -152,6 +160,7 @@ class AppState extends ChangeNotifier {
       name: info.name,
       host: host,
       httpPort: port,
+      deviceType: info.deviceType,
       manual: true,
       lastSeen: DateTime.now(),
     );

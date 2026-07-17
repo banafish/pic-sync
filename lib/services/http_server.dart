@@ -8,7 +8,7 @@ import '../models/manifest.dart';
 import 'library_scanner.dart';
 
 typedef ShareDirsProvider = List<String> Function();
-typedef DeviceInfoProvider = ({String deviceId, String name}) Function();
+typedef DeviceInfoProvider = ({String deviceId, String name, String deviceType}) Function();
 typedef TokenValidator = bool Function(String? token);
 typedef PairRequestHandler = Future<String?> Function(String peerId, String peerName);
 
@@ -67,7 +67,12 @@ class HttpServer {
     final r = Router();
     r.get('/info', (Request req) {
       final info = deviceInfo();
-      return _json({'deviceId': info.deviceId, 'name': info.name, 'ver': 1});
+      return _json({
+        'deviceId': info.deviceId,
+        'name': info.name,
+        'deviceType': info.deviceType,
+        'ver': 1,
+      });
     });
     r.get('/manifest', (Request req) async {
       if (!_authed(req)) return Response(401);

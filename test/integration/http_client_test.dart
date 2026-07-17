@@ -17,7 +17,7 @@ void main() {
     await File(p.join(tmp.path, '旅行', 'a.jpg')).writeAsString('hello-world');
     server = srv.HttpServer(
       shareDirs: () => [tmp.path],
-      deviceInfo: () => (deviceId: 'srv', name: '服务端'),
+      deviceInfo: () => (deviceId: 'srv', name: '服务端', deviceType: 'desktop'),
       validateToken: (t) => t == 'tok',
       onPairRequest: (id, name) async => 'tok',
     );
