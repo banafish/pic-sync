@@ -40,6 +40,7 @@ class AppState extends ChangeNotifier {
         ),
         validateToken: (t) => t != null && settings.issuedTokens.containsValue(t),
         onPairRequest: handlePairRequest,
+        onProbeRequest: handleProbeRequest,
       );
       serverPort = await s.start();
       server = s;
@@ -166,10 +167,26 @@ class AppState extends ChangeNotifier {
     return (raw, 45655);
   }
 
+  /// 收到对端探测请求时，将对端也加进手动列表与设备管理中。
+  void handleProbeRequest(Device device) {
+    discovery?.upsertManual(device);
+    final rawHost = device.httpPort == 45655 ? device.host : '${device.host}:${device.httpPort}';
+    addManualHost(rawHost);
+  }
+
   /// 探测手动 IP：成功返回 Device 并挂进设备列表。
   Future<Device> probeManualHost(String raw) async {
     final (host, port) = parseHostPort(raw);
-    final info = await PeerClient(host, port).fetchInfo();
+    final info = await PeerClient(host, port).fetchInfo(
+      selfInfo: serverPort != null
+          ? (
+              deviceId: settings.deviceId,
+              name: settings.deviceName,
+              deviceType: defaultDeviceType(),
+              httpPort: serverPort!,
+            )
+          : null,
+    );
     final device = Device(
       deviceId: info.deviceId,
       name: info.name,

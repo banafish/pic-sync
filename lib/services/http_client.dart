@@ -23,8 +23,17 @@ class PeerClient {
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('http://$host:$port$path').replace(queryParameters: query);
 
-  Future<({String deviceId, String name, String deviceType})> fetchInfo() async {
-    final req = await _client.getUrl(_uri('/info'));
+  Future<({String deviceId, String name, String deviceType})> fetchInfo({
+    ({String deviceId, String name, String deviceType, int httpPort})? selfInfo,
+  }) async {
+    final query = <String, String>{};
+    if (selfInfo != null) {
+      query['deviceId'] = selfInfo.deviceId;
+      query['name'] = selfInfo.name;
+      query['deviceType'] = selfInfo.deviceType;
+      query['port'] = selfInfo.httpPort.toString();
+    }
+    final req = await _client.getUrl(_uri('/info', query.isEmpty ? null : query));
     final res = await req.close();
     final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, dynamic>;
     return (

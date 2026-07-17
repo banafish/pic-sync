@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
+import '../models/device.dart';
 import '../models/manifest.dart';
 import 'library_scanner.dart';
 
@@ -11,6 +12,7 @@ typedef ShareDirsProvider = List<String> Function();
 typedef DeviceInfoProvider = ({String deviceId, String name, String deviceType}) Function();
 typedef TokenValidator = bool Function(String? token);
 typedef PairRequestHandler = Future<String?> Function(String peerId, String peerName);
+typedef ProbeRequestHandler = void Function(Device device);
 
 /// 将 manifest 的 "<序号>/<相对路径>" 解析回绝对路径；非法返回 null。
 String? pathToAbs(String manifestPath, List<String> shareDirs) {
@@ -32,12 +34,14 @@ class HttpServer {
     required this.deviceInfo,
     required this.validateToken,
     required this.onPairRequest,
+    this.onProbeRequest,
   });
 
   final ShareDirsProvider shareDirs;
   final DeviceInfoProvider deviceInfo;
   final TokenValidator validateToken;
   final PairRequestHandler onPairRequest;
+  final ProbeRequestHandler? onProbeRequest;
 
   io.HttpServer? _server;
   int _port = 0;
@@ -63,9 +67,43 @@ class HttpServer {
     _server = null;
   }
 
+  String? _getClientHost(Request req) {
+    final queryHost = req.url.queryParameters['host'];
+    if (queryHost != null && queryHost.isNotEmpty) return queryHost;
+    final info = req.context['shelf.io.connection_info'] as io.HttpConnectionInfo?;
+    if (info != null) {
+      var addr = info.remoteAddress.address;
+      if (addr.startsWith('::ffff:')) addr = addr.substring(7);
+      if (addr == '::1') addr = '127.0.0.1';
+      return addr;
+    }
+    return null;
+  }
+
   Router _router() {
     final r = Router();
     r.get('/info', (Request req) {
+      final qp = req.url.queryParameters;
+      final peerId = qp['deviceId'];
+      if (peerId != null && peerId.isNotEmpty && peerId != deviceInfo().deviceId) {
+        final peerName = qp['name'] ?? '未知设备';
+        final peerType = qp['deviceType'] ?? 'phone';
+        final peerPort = int.tryParse(qp['port'] ?? '') ?? 45655;
+        final host = _getClientHost(req);
+        if (host != null && host.isNotEmpty) {
+          final peerDevice = Device(
+            deviceId: peerId,
+            name: peerName,
+            host: host,
+            httpPort: peerPort,
+            deviceType: peerType,
+            manual: true,
+            lastSeen: DateTime.now(),
+          );
+          onProbeRequest?.call(peerDevice);
+        }
+      }
+
       final info = deviceInfo();
       return _json({
         'deviceId': info.deviceId,

@@ -363,6 +363,9 @@ class HomePage extends StatelessWidget {
     );
     if (host == null || host.isEmpty) return;
     await app.addManualHost(host);
+    try {
+      await app.probeManualHost(host);
+    } catch (_) {}
   }
 }
 

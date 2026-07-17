@@ -42,6 +42,29 @@ void main() {
     expect(body['ver'], 1);
   });
 
+  test('/info 收到对端探测请求触发 onProbeRequest', () async {
+    dynamic probed;
+    final server2 = srv.HttpServer(
+      shareDirs: () => [],
+      deviceInfo: () => (deviceId: 'srv-2', name: 'S2', deviceType: 'desktop'),
+      validateToken: (_) => false,
+      onPairRequest: (_, __) async => null,
+      onProbeRequest: (dev) => probed = dev,
+    );
+    final p2 = await server2.start(basePort: 46100);
+    final c = HttpClient();
+    final req = await c.getUrl(Uri.parse('http://127.0.0.1:$p2/info?deviceId=cli-1&name=客户端1&deviceType=phone&port=45655'));
+    final res = await req.close();
+    expect(res.statusCode, 200);
+    expect(probed, isNotNull);
+    expect(probed.deviceId, 'cli-1');
+    expect(probed.name, '客户端1');
+    expect(probed.deviceType, 'phone');
+    expect(probed.httpPort, 45655);
+    expect(probed.host, '127.0.0.1');
+    await server2.stop();
+  });
+
   test('/manifest 无 token 返回 401', () async {
     final res = await get('/manifest');
     expect(res.statusCode, 401);

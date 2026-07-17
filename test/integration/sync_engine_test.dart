@@ -15,7 +15,9 @@ class DiskFullClient implements PeerClient {
   @override
   int get port => 1;
   @override
-  Future<({String deviceId, String name, String deviceType})> fetchInfo() async =>
+  Future<({String deviceId, String name, String deviceType})> fetchInfo({
+    ({String deviceId, String name, String deviceType, int httpPort})? selfInfo,
+  }) async =>
       (deviceId: 'x', name: 'x', deviceType: 'phone');
   @override
   Future<String> pair(String myDeviceId, String myName) async => 't';

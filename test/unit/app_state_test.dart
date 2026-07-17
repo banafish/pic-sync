@@ -11,8 +11,8 @@ void main() {
   setUp(() async => tmp = await Directory.systemTemp.createTemp('picsync_app_'));
   tearDown(() async => tmp.delete(recursive: true));
 
-  Future<AppState> makeApp() async {
-    final store = SettingsStore(p.join(tmp.path, 'settings.json'));
+  Future<AppState> makeApp([String filename = 'settings.json']) async {
+    final store = SettingsStore(p.join(tmp.path, filename));
     return AppState(store: store, settings: await store.load());
   }
 
@@ -92,5 +92,25 @@ void main() {
     final reloaded = await SettingsStore(p.join(tmp.path, 'settings.json')).load();
     expect(reloaded.defaultRecvDir, '');
     expect(reloaded.shareDirs, ['D:/其它共享']);
+  });
+
+  test('probeManualHost 探测对方时对方与本机相互添加设备', () async {
+    final app1 = await makeApp('s1.json');
+    await app1.startServices();
+
+    final app2 = await makeApp('s2.json');
+    await app2.startServices();
+
+    final dev2 = await app1.probeManualHost('127.0.0.1:${app2.serverPort}');
+    expect(dev2.deviceId, app2.settings.deviceId);
+    expect(app1.discovery?.currentDevices.any((d) => d.deviceId == app2.settings.deviceId), isTrue);
+
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(app2.discovery?.currentDevices.any((d) => d.deviceId == app1.settings.deviceId), isTrue);
+    final expectedHost = app1.serverPort == 45655 ? '127.0.0.1' : '127.0.0.1:${app1.serverPort}';
+    expect(app2.settings.manualHosts.contains(expectedHost), isTrue);
+
+    app1.dispose();
+    app2.dispose();
   });
 }
