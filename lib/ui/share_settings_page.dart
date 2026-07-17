@@ -24,8 +24,8 @@ class ShareSettingsPage extends StatelessWidget {
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               leading: CircleAvatar(
-                backgroundColor: colorScheme.primaryContainer,
-                child: Icon(Icons.badge_outlined, color: colorScheme.onPrimaryContainer),
+                backgroundColor: colorScheme.secondaryContainer,
+                child: Icon(Icons.badge_outlined, color: colorScheme.onSecondaryContainer),
               ),
               title: const Text('设备名', style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(s.deviceName),
@@ -91,7 +91,7 @@ class ShareSettingsPage extends StatelessWidget {
                   title: Text('共享目录（${s.shareDirs.length}）',
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('这些文件夹里的图片/视频会共享给已配对设备'),
-                  trailing: IconButton.filled(
+                  trailing: IconButton.filledTonal(
                     icon: const Icon(Icons.add),
                     tooltip: '添加共享目录',
                     onPressed: () async {
