@@ -142,14 +142,14 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: FilledButton(
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: const StadiumBorder(),
               ),
               onPressed: () => Navigator.of(context).pop(_current),
-              child: const Text('选择此文件夹', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: const Text('选择此文件夹', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             ),
           ),
         ),

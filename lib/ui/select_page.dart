@@ -131,18 +131,18 @@ class _SelectPageState extends State<SelectPage> {
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: ListenableBuilder(
                     listenable: m,
                     builder: (_, _) => FilledButton(
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
                         shape: const StadiumBorder(),
                       ),
                       onPressed: m.selectedCount == 0 ? null : _startSync,
                       child: Text(
                         '开始同步（${m.selectedCount} 个文件，${formatBytes(m.selectedBytes)}）',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

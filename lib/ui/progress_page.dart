@@ -178,36 +178,48 @@ class _ProgressPageState extends State<ProgressPage> {
         ),
         bottomNavigationBar: !finished
             ? null
-            : SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      if (failed > 0) ...[
+            : Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(15),
+                      blurRadius: 10,
+                      offset: const Offset(0, -3),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: [
+                        if (failed > 0) ...[
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: colorScheme.error,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: const StadiumBorder(),
+                              ),
+                              onPressed: _retry,
+                              child: Text('重试失败项（$failed）', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
                         Expanded(
-                          child: FilledButton(
+                          child: FilledButton.tonal(
                             style: FilledButton.styleFrom(
-                              backgroundColor: colorScheme.error,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
                               shape: const StadiumBorder(),
                             ),
-                            onPressed: _retry,
-                            child: Text('重试失败项（$failed）'),
+                            onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                            child: const Text('完成', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                           ),
                         ),
-                        const SizedBox(width: 12),
                       ],
-                      Expanded(
-                        child: FilledButton.tonal(
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: const StadiumBorder(),
-                          ),
-                          onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
-                          child: const Text('完成'),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
