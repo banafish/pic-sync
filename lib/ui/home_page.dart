@@ -21,28 +21,12 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withAlpha(20),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.sync_rounded,
-                size: 20,
-                color: colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text('图片同步'),
-          ],
-        ),
+        centerTitle: false,
+        titleSpacing: 16,
+        title: const Text('图片同步'),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 16),
             child: FilledButton.tonalIcon(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ShareSettingsPage()),
@@ -649,7 +633,6 @@ class _EmptyDeviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
         child: Column(
