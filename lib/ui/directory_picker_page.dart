@@ -129,19 +129,28 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(15),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
             ),
-            icon: const Icon(Icons.check_circle_outline),
-            onPressed: () => Navigator.of(context).pop(_current),
-            label: const Text('选择此文件夹', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: const StadiumBorder(),
+              ),
+              onPressed: () => Navigator.of(context).pop(_current),
+              child: const Text('选择此文件夹', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
           ),
         ),
       ),
