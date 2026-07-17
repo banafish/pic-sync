@@ -35,23 +35,25 @@ class PicSyncApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF007A78),
+              seedColor: const Color(0xFF006A67),
               brightness: Brightness.light,
               primary: const Color(0xFF006A67),
               onPrimary: Colors.white,
-              primaryContainer: const Color(0xFF70F7F2),
+              primaryContainer: const Color(0xFF9CF2EC),
               onPrimaryContainer: const Color(0xFF00201F),
               secondary: const Color(0xFF4A6362),
-              surfaceContainerLow: const Color(0xFFF7FBFB),
-              surfaceContainer: const Color(0xFFEEF4F4),
-              surfaceContainerHigh: const Color(0xFFE3EAE9),
+              surface: const Color(0xFFF4F8F8),
+              surfaceContainerLow: const Color(0xFFF8FCFC),
+              surfaceContainer: const Color(0xFFEDF3F3),
+              surfaceContainerHigh: const Color(0xFFE2ECEC),
             ),
+            scaffoldBackgroundColor: const Color(0xFFF4F8F8),
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: Colors.grey.withAlpha(35),
+                  color: const Color(0xFF006A67).withAlpha(18),
                   width: 1,
                 ),
               ),
@@ -62,61 +64,80 @@ class PicSyncApp extends StatelessWidget {
               centerTitle: true,
               elevation: 0,
               surfaceTintColor: Colors.transparent,
-              backgroundColor: Color(0xFFF7FBFB),
+              backgroundColor: Color(0xFFF4F8F8),
               titleTextStyle: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF191C1C),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF161D1D),
+                letterSpacing: -0.3,
               ),
             ),
-            scaffoldBackgroundColor: const Color(0xFFF7FBFB),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
               fillColor: const Color(0xFFEFF5F4),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             dialogTheme: DialogThemeData(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
               ),
-              elevation: 4,
+              elevation: 6,
             ),
             floatingActionButtonTheme: FloatingActionButtonThemeData(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
               ),
-              elevation: 2,
+              elevation: 3,
+              backgroundColor: const Color(0xFF006A67),
+              foregroundColor: Colors.white,
             ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF007A78),
+              seedColor: const Color(0xFF006A67),
               brightness: Brightness.dark,
+              surface: const Color(0xFF111414),
             ),
+            scaffoldBackgroundColor: const Color(0xFF111414),
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: Colors.white.withAlpha(20),
+                  color: Colors.white.withAlpha(22),
                   width: 1,
                 ),
               ),
+              color: const Color(0xFF1C2121),
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             ),
             appBarTheme: const AppBarTheme(
               centerTitle: true,
               elevation: 0,
+              backgroundColor: Color(0xFF111414),
+              surfaceTintColor: Colors.transparent,
+              titleTextStyle: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFE1E3E3),
+                letterSpacing: -0.3,
+              ),
             ),
             dialogTheme: DialogThemeData(
               shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
+              elevation: 3,
             ),
           ),
           themeMode: ThemeMode.system,
