@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:uuid/uuid.dart';
 import '../models/device.dart';
 import '../models/settings.dart';
@@ -8,7 +9,7 @@ import '../services/http_client.dart';
 import '../services/http_server.dart' as srv;
 import '../services/settings_store.dart';
 
-class AppState extends ChangeNotifier {
+class AppState extends ChangeNotifier with WidgetsBindingObserver {
   AppState({required this.store, required this.settings}) {
     if (settings.defaultRecvDir.isNotEmpty &&
         !settings.shareDirs.contains(settings.defaultRecvDir)) {
@@ -30,6 +31,7 @@ class AppState extends ChangeNotifier {
   Future<bool> Function(String peerId, String peerName)? pairApprover;
 
   Future<void> startServices() async {
+    WidgetsFlutterBinding.ensureInitialized().addObserver(this);
     try {
       final s = srv.HttpServer(
         shareDirs: () => settings.shareDirs,
@@ -59,6 +61,22 @@ class AppState extends ChangeNotifier {
       startupError = '服务启动失败：$e';
     }
     notifyListeners();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshDiscovery();
+    }
+  }
+
+  Future<void> refreshDiscovery() async {
+    await discovery?.restart();
+    for (final host in settings.manualHosts.toList()) {
+      try {
+        await probeManualHost(host);
+      } catch (_) {}
+    }
   }
 
   @visibleForTesting
@@ -202,6 +220,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsFlutterBinding.ensureInitialized().removeObserver(this);
     _devSub?.cancel();
     discovery?.stop();
     server?.stop();

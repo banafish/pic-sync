@@ -20,13 +20,17 @@ class MainActivity : FlutterActivity() {
                                 .getSystemService(Context.WIFI_SERVICE) as WifiManager
                             multicastLock = wifi.createMulticastLock("picsync").apply {
                                 setReferenceCounted(false)
-                                acquire()
                             }
+                        }
+                        if (multicastLock?.isHeld != true) {
+                            multicastLock?.acquire()
                         }
                         result.success(null)
                     }
                     "release" -> {
-                        multicastLock?.release()
+                        if (multicastLock?.isHeld == true) {
+                            multicastLock?.release()
+                        }
                         multicastLock = null
                         result.success(null)
                     }
@@ -36,7 +40,9 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
-        multicastLock?.release()
+        if (multicastLock?.isHeld == true) {
+            multicastLock?.release()
+        }
         multicastLock = null
         super.onDestroy()
     }

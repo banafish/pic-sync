@@ -64,9 +64,12 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-        children: [
+      body: RefreshIndicator(
+        onRefresh: () => app.refreshDiscovery(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+          children: [
           if (app.startupError != null)
             Card(
               color: colorScheme.errorContainer,
@@ -304,6 +307,7 @@ class HomePage extends StatelessWidget {
           ],
         ],
       ),
+    ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add_rounded),
         label: const Text('添加 IP', style: TextStyle(fontWeight: FontWeight.bold)),

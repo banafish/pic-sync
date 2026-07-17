@@ -32,24 +32,39 @@ class DiscoveryService {
         // 拿不到锁也继续：多数设备前台仍可收包
       }
     }
-    _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, kDiscoveryPort,
-        reuseAddress: true);
-    _socket!.broadcastEnabled = true;
-    _socket!.listen((event) {
-      if (event != RawSocketEvent.read) return;
-      final dg = _socket!.receive();
-      if (dg == null) return;
-      // UDP 报文按 UTF-8 解码（设备名可能是中文）
-      ingest(utf8.decode(dg.data, allowMalformed: true), dg.address.address);
-    });
+    try {
+      _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, kDiscoveryPort,
+          reuseAddress: true);
+      _socket!.broadcastEnabled = true;
+      _socket!.listen(
+        (event) {
+          if (event != RawSocketEvent.read) return;
+          final dg = _socket?.receive();
+          if (dg == null) return;
+          // UDP 报文按 UTF-8 解码（设备名可能是中文）
+          ingest(utf8.decode(dg.data, allowMalformed: true), dg.address.address);
+        },
+        onError: (_) {
+          unawaited(restart());
+        },
+        onDone: () {},
+      );
+    } catch (_) {
+      // 端口绑定或网络故障时尝试容错
+    }
+    _announceTimer?.cancel();
     _announceTimer = Timer.periodic(const Duration(seconds: 3), (_) => _broadcast());
+    _pruneTimer?.cancel();
     _pruneTimer = Timer.periodic(const Duration(seconds: 2), (_) => pruneStale());
     _broadcast();
+    Future.delayed(const Duration(milliseconds: 500), _broadcast);
   }
 
   Future<void> stop() async {
     _announceTimer?.cancel();
+    _announceTimer = null;
     _pruneTimer?.cancel();
+    _pruneTimer = null;
     _socket?.close();
     _socket = null;
     if (Platform.isAndroid) {
@@ -59,16 +74,26 @@ class DiscoveryService {
     }
   }
 
+  Future<void> restart() async {
+    await stop();
+    await start();
+  }
+
   void _broadcast() {
-    final info = selfInfo();
-    final msg = AnnounceMessage(
-      deviceId: info.deviceId,
-      name: info.name,
-      deviceType: info.deviceType,
-      httpPort: httpPort(),
-    ).encode();
-    final data = utf8.encode(msg); // 中文设备名需 UTF-8 编码
-    _socket?.send(data, InternetAddress('255.255.255.255'), kDiscoveryPort);
+    if (_socket == null) return;
+    try {
+      final info = selfInfo();
+      final msg = AnnounceMessage(
+        deviceId: info.deviceId,
+        name: info.name,
+        deviceType: info.deviceType,
+        httpPort: httpPort(),
+      ).encode();
+      final data = utf8.encode(msg); // 中文设备名需 UTF-8 编码
+      _socket?.send(data, InternetAddress('255.255.255.255'), kDiscoveryPort);
+    } catch (_) {
+      unawaited(restart());
+    }
   }
 
   void ingest(String raw, String senderHost) {

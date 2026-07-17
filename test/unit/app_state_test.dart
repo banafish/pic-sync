@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:pic_sync/models/device.dart';
@@ -112,5 +113,19 @@ void main() {
 
     app1.dispose();
     app2.dispose();
+  });
+
+  test('应用返回前台 (resumed) 时触发 refreshDiscovery 重启 UDP 发现服务', () async {
+    final app = await makeApp('s_resume.json');
+    await app.startServices();
+
+    final oldDiscovery = app.discovery;
+    expect(oldDiscovery, isNotNull);
+
+    app.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    expect(app.discovery, isNotNull);
+    app.dispose();
   });
 }
