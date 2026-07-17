@@ -13,6 +13,18 @@ class FakePicker implements DirectoryPicker {
   final String? result;
   @override
   Future<String?> pickDirectory(BuildContext context) async => result;
+  @override
+  Future<List<String>> pickDirectories(BuildContext context) async =>
+      result != null ? [result!] : [];
+}
+
+class MultiFakePicker implements DirectoryPicker {
+  MultiFakePicker(this.results);
+  final List<String> results;
+  @override
+  Future<String?> pickDirectory(BuildContext context) async => results.firstOrNull;
+  @override
+  Future<List<String>> pickDirectories(BuildContext context) async => results;
 }
 
 void main() {
@@ -49,6 +61,15 @@ void main() {
 
     await tapWithIo(tester, find.byIcon(Icons.delete_outline));
     expect(app.settings.shareDirs, isEmpty);
+  });
+
+  testWidgets('批量添加多个共享目录', (tester) async {
+    final app = (await tester.runAsync(makeApp))!;
+    await tester.pumpWidget(wrap(app, ShareSettingsPage(picker: MultiFakePicker(['D:/照片1', 'D:/照片2']))));
+    await tapWithIo(tester, find.byIcon(Icons.add));
+    expect(find.text('D:/照片1'), findsOneWidget);
+    expect(find.text('D:/照片2'), findsOneWidget);
+    expect(app.settings.shareDirs, ['D:/照片1', 'D:/照片2']);
   });
 
   testWidgets('设置默认接收目录', (tester) async {

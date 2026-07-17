@@ -21,7 +21,10 @@ class ShareSettingsPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               leading: CircleAvatar(
                 backgroundColor: colorScheme.secondaryContainer,
@@ -54,7 +57,10 @@ class ShareSettingsPage extends StatelessWidget {
           ),
 
           Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               leading: CircleAvatar(
                 backgroundColor: s.defaultRecvDir.isEmpty
@@ -84,6 +90,8 @@ class ShareSettingsPage extends StatelessWidget {
           ),
 
           Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
                 ListTile(
@@ -95,8 +103,10 @@ class ShareSettingsPage extends StatelessWidget {
                     icon: const Icon(Icons.add),
                     tooltip: '添加共享目录',
                     onPressed: () async {
-                      final path = await effectivePicker.pickDirectory(context);
-                      if (path != null) await app.addShareDir(path);
+                      final paths = await effectivePicker.pickDirectories(context);
+                      for (final path in paths) {
+                        await app.addShareDir(path);
+                      }
                     },
                   ),
                 ),
