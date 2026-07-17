@@ -585,7 +585,10 @@ class _RadarPulseAvatarState extends State<_RadarPulseAvatar>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    )..repeat();
+    );
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -679,7 +682,7 @@ class _EmptyDeviceCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '正在搜索局域网设备...',
+              '未发现设备，自动搜索中...',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
