@@ -204,26 +204,6 @@ class HomePage extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  if (d.manual) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.secondaryContainer,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        '手动添加',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: colorScheme.onSecondaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ],
                               ),
                             ],
