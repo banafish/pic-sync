@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(960, 720);
-  if (!window.Create(L"图片同步", origin, size)) {
+  if (!window.Create(L"\u56FE\u7247\u540C\u6B65", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
