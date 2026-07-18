@@ -78,57 +78,52 @@ class _SelectPageState extends State<SelectPage> {
 
     showDialog<void>(
       context: context,
+      useSafeArea: false,
       builder: (ctx) {
-        return Dialog(
-          backgroundColor: Colors.black.withAlpha(230),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          clipBehavior: Clip.antiAlias,
+        return Dialog.fullscreen(
+          backgroundColor: Colors.black,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: Colors.black.withAlpha(100),
-                child: Row(
-                  children: [
-                    const Icon(Icons.image_rounded, color: Colors.white70, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        f.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+              SafeArea(
+                bottom: false,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: Colors.black.withAlpha(180),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.image_rounded, color: Colors.white70, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          f.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      formatBytes(f.size),
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      tooltip: '关闭',
-                    ),
-                  ],
+                      Text(
+                        formatBytes(f.size),
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        tooltip: '关闭',
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Flexible(
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(ctx).size.height * 0.7,
-                    minHeight: 200,
-                  ),
-                  width: double.infinity,
-                  child: InteractiveViewer(
-                    minScale: 0.5,
-                    maxScale: 4.0,
+              Expanded(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Center(
                     child: Image.network(
                       url,
                       headers: headers,
