@@ -16,7 +16,7 @@
 ```bash
 flutter pub get
 flutter build windows --release   # 产物 build/windows/x64/runner/Release/
-flutter build apk --release       # 产物 build/app/outputs/flutter-apk/app-release.apk
+flutter build apk --split-per-abi  # 按架构拆包产物 build/app/outputs/flutter-apk/app-arm64-v8a-release.apk 等
 ```
 
 ## 使用
