@@ -153,6 +153,33 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Future<void> setPeerFolderOverride(String peerDeviceId, String folder, String targetPath) async {
+    final key = folder.trim().toLowerCase();
+    if (key.isEmpty) return;
+    final deviceMap = settings.peerFolderOverrides.putIfAbsent(peerDeviceId, () => {});
+    if (targetPath.trim().isEmpty) {
+      deviceMap.remove(key);
+      if (deviceMap.isEmpty) settings.peerFolderOverrides.remove(peerDeviceId);
+    } else {
+      deviceMap[key] = targetPath.trim();
+    }
+    await store.save(settings);
+    notifyListeners();
+  }
+
+  Future<void> removePeerFolderOverride(String peerDeviceId, String folder) async {
+    final key = folder.trim().toLowerCase();
+    final deviceMap = settings.peerFolderOverrides[peerDeviceId];
+    if (deviceMap != null) {
+      deviceMap.remove(key);
+      if (deviceMap.isEmpty) {
+        settings.peerFolderOverrides.remove(peerDeviceId);
+      }
+      await store.save(settings);
+      notifyListeners();
+    }
+  }
+
   Future<void> setDeviceName(String name) async {
     final n = name.trim();
     if (n.isEmpty) return;

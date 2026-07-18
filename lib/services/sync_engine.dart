@@ -39,12 +39,16 @@ class SyncEngine {
     required this.client,
     required this.shareDirs,
     required this.defaultRecvDir,
+    this.peerDeviceId,
+    this.peerFolderOverrides,
     this.concurrency = 3,
   });
 
   final PeerClient client;
   final List<String> shareDirs;
   final String defaultRecvDir;
+  final String? peerDeviceId;
+  final Map<String, Map<String, String>>? peerFolderOverrides;
   final int concurrency;
 
   final StreamController<SyncProgress> _progress = StreamController.broadcast();
@@ -92,7 +96,13 @@ class SyncEngine {
         final item = queue.removeAt(0);
         item.status = SyncStatus.downloading;
         _emit(item.file.name, force: true);
-        final targetDir = resolveTargetDir(item.file.folder, folderIndex, defaultRecvDir);
+        final targetDir = resolveTargetDir(
+          item.file.folder,
+          folderIndex,
+          defaultRecvDir,
+          peerDeviceId: peerDeviceId,
+          peerFolderOverrides: peerFolderOverrides,
+        );
         try {
           await client.downloadFile(
             remotePath: item.file.path,

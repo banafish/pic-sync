@@ -49,6 +49,7 @@ void main() {
       expect(s.issuedTokens, isEmpty);
       expect(s.peerTokens, isEmpty);
       expect(s.manualHosts, isEmpty);
+      expect(s.peerFolderOverrides, isEmpty);
     });
     test('JSON 往返', () {
       final s = Settings.defaults(deviceId: 'id', deviceName: '我的电脑')
@@ -57,7 +58,8 @@ void main() {
         ..issuedTokens['peer1'] = 'tokA'
         ..peerTokens['peer1'] = 'tokB'
         ..peerNames['peer1'] = '手机'
-        ..manualHosts.add('192.168.1.9');
+        ..manualHosts.add('192.168.1.9')
+        ..peerFolderOverrides['peer1'] = {'camera': 'E:/Custom/Camera'};
       final back = Settings.fromJson(jsonDecode(jsonEncode(s.toJson())) as Map<String, dynamic>);
       expect(back.deviceId, 'id');
       expect(back.shareDirs, ['D:/照片']);
@@ -66,11 +68,13 @@ void main() {
       expect(back.peerTokens['peer1'], 'tokB');
       expect(back.peerNames['peer1'], '手机');
       expect(back.manualHosts, ['192.168.1.9']);
+      expect(back.peerFolderOverrides['peer1']?['camera'], 'E:/Custom/Camera');
     });
     test('缺失字段容错', () {
       final back = Settings.fromJson({'deviceId': 'id', 'deviceName': 'n'});
       expect(back.shareDirs, isEmpty);
       expect(back.defaultRecvDir, '');
+      expect(back.peerFolderOverrides, isEmpty);
     });
   });
 }

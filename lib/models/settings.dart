@@ -7,6 +7,7 @@ class Settings {
   Map<String, String> peerTokens; // 对方 deviceId -> 对方签发给我的 token（客户端携带）
   Map<String, String> peerNames; // 对方 deviceId -> 显示名
   List<String> manualHosts; // "192.168.1.23" 或 "192.168.1.23:45656"
+  Map<String, Map<String, String>> peerFolderOverrides; // 对方 deviceId -> (小写远程文件夹名 -> 本地保存路径)
 
   Settings({
     required this.deviceId,
@@ -17,7 +18,8 @@ class Settings {
     required this.peerTokens,
     required this.peerNames,
     required this.manualHosts,
-  });
+    Map<String, Map<String, String>>? peerFolderOverrides,
+  }) : peerFolderOverrides = peerFolderOverrides ?? {};
 
   factory Settings.defaults({required String deviceId, required String deviceName}) => Settings(
         deviceId: deviceId,
@@ -28,6 +30,7 @@ class Settings {
         peerTokens: {},
         peerNames: {},
         manualHosts: [],
+        peerFolderOverrides: {},
       );
 
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
@@ -39,6 +42,12 @@ class Settings {
         peerTokens: (json['peerTokens'] as Map? ?? {}).cast<String, String>(),
         peerNames: (json['peerNames'] as Map? ?? {}).cast<String, String>(),
         manualHosts: (json['manualHosts'] as List? ?? []).cast<String>().toList(),
+        peerFolderOverrides: (json['peerFolderOverrides'] as Map? ?? {}).map(
+          (k, v) => MapEntry(
+            k as String,
+            (v as Map? ?? {}).cast<String, String>(),
+          ),
+        ),
       );
 
   Map<String, dynamic> toJson() => {
@@ -50,5 +59,6 @@ class Settings {
         'peerTokens': peerTokens,
         'peerNames': peerNames,
         'manualHosts': manualHosts,
+        'peerFolderOverrides': peerFolderOverrides,
       };
 }

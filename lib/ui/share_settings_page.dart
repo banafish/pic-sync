@@ -96,6 +96,56 @@ class ShareSettingsPage extends StatelessWidget {
               children: [
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: colorScheme.secondaryContainer,
+                    child: Icon(Icons.push_pin_outlined, color: colorScheme.onSecondaryContainer),
+                  ),
+                  title: const Text('特定文件夹保存规则', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('优先将特定设备的远程文件夹保存至指定目录'),
+                ),
+                if (s.peerFolderOverrides.isEmpty) ...[
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      '无配置规则（可在同步文件选择页点击文件夹卡片右侧按钮添加）',
+                      style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                    ),
+                  ),
+                ] else ...[
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  for (final entry in s.peerFolderOverrides.entries)
+                    for (final rule in entry.value.entries)
+                      ListTile(
+                        dense: true,
+                        leading: Icon(Icons.folder_special_outlined, color: colorScheme.primary),
+                        title: Text(
+                          '${s.peerNames[entry.key] ?? entry.key} / ${rule.key}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          '➔ ${rule.value}',
+                          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          color: colorScheme.error,
+                          tooltip: '删除此规则',
+                          onPressed: () => app.removePeerFolderOverride(entry.key, rule.key),
+                        ),
+                      ),
+                ],
+              ],
+            ),
+          ),
+
+          Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   title: Text('共享目录（${s.shareDirs.length}）',
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('这些文件夹里的图片/视频会共享给已配对设备'),

@@ -64,4 +64,42 @@ void main() {
     expect(resolveTargetDir('不存在的名字', index, '/默认'), '/默认');
     expect(resolveTargetDir('独特名', index, '/默认'), '/默认');
   });
+
+  test('最高优先级：peerFolderOverrides 覆盖同名和默认路径且按设备隔离', () async {
+    final share = await mkdir('share');
+    final samename = await mkdir('share/旅行');
+    final index = await buildFolderIndex([share]);
+    final customDevA = '/custom/path/deviceA';
+    final customDevB = '/custom/path/deviceB';
+
+    final overrides = {
+      'devA': {'旅行': customDevA},
+      'devB': {'旅行': customDevB},
+    };
+
+    // devA 命中了自定义设定的路径（优先于同名的 samename）
+    expect(
+      resolveTargetDir('旅行', index, '/def', peerDeviceId: 'devA', peerFolderOverrides: overrides),
+      customDevA,
+    );
+    // 大小写不敏感测试
+    expect(
+      resolveTargetDir('LÜXING', index, '/def', peerDeviceId: 'devA', peerFolderOverrides: overrides),
+      '/def',
+    );
+    expect(
+      resolveTargetDir('旅行', index, '/def', peerDeviceId: 'devA', peerFolderOverrides: {'devA': {'旅行': customDevA}}),
+      customDevA,
+    );
+    // devB 命中属于 devB 的专有路径
+    expect(
+      resolveTargetDir('旅行', index, '/def', peerDeviceId: 'devB', peerFolderOverrides: overrides),
+      customDevB,
+    );
+    // 未设定的 devC 回退到同名匹配
+    expect(
+      resolveTargetDir('旅行', index, '/def', peerDeviceId: 'devC', peerFolderOverrides: overrides),
+      samename,
+    );
+  });
 }

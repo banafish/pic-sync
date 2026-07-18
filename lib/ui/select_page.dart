@@ -1,20 +1,24 @@
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/device.dart';
 import '../models/manifest.dart';
 import '../services/http_client.dart';
 import '../services/media_types.dart';
+import '../services/placer.dart';
 import '../services/sync_engine.dart';
 import 'app_state.dart';
+import 'directory_picker.dart';
 import 'format.dart';
 import 'progress_page.dart';
 import 'select_loader.dart';
 import 'selection_model.dart';
 
 class SelectPage extends StatefulWidget {
-  const SelectPage({super.key, required this.device, this.loader});
+  const SelectPage({super.key, required this.device, this.loader, this.picker});
   final Device device;
   final SelectLoader? loader;
+  final DirectoryPicker? picker;
 
   @override
   State<SelectPage> createState() => _SelectPageState();
@@ -23,6 +27,7 @@ class SelectPage extends StatefulWidget {
 class _SelectPageState extends State<SelectPage> {
   SelectLoadResult? _data;
   SelectionModel? _model;
+  Map<String, String> _folderIndex = {};
   String _status = '正在连接…';
   String? _error;
   final Set<String> _expandedFolders = {};
@@ -42,12 +47,14 @@ class _SelectPageState extends State<SelectPage> {
     });
     final app = context.read<AppState>();
     try {
+      final folderIdx = await buildFolderIndex(app.settings.shareDirs);
       final data = await (widget.loader ?? SelectLoader()).load(app, widget.device,
           onStatus: (s) {
         if (mounted) setState(() => _status = s);
       });
       if (!mounted) return;
       setState(() {
+        _folderIndex = folderIdx;
         _data = data;
         _model = SelectionModel(data.diff);
       });
@@ -64,6 +71,8 @@ class _SelectPageState extends State<SelectPage> {
       client: _data!.client,
       shareDirs: List.of(app.settings.shareDirs),
       defaultRecvDir: app.settings.defaultRecvDir,
+      peerDeviceId: widget.device.deviceId,
+      peerFolderOverrides: app.settings.peerFolderOverrides,
     );
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => ProgressPage(engine: engine, files: _model!.selectedFiles)));
@@ -331,6 +340,142 @@ class _SelectPageState extends State<SelectPage> {
     );
   }
 
+  Future<void> _showTargetDirPickerBottomSheet(
+    BuildContext context,
+    String folderName,
+    String currentResolvedDir,
+    bool hasCustomOverride,
+  ) async {
+    final app = context.read<AppState>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final deviceId = widget.device.deviceId;
+    final deviceName = widget.device.name;
+    final folderKey = folderName.toLowerCase();
+    final currentCustomDir = app.settings.peerFolderOverrides[deviceId]?[folderKey];
+    final effectivePicker = widget.picker ?? PlatformDirectoryPicker();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurfaceVariant.withAlpha(80),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: colorScheme.primaryContainer,
+                      child: Icon(Icons.drive_file_move_rounded, color: colorScheme.onPrimaryContainer),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '设置保存位置',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '为「$deviceName」的文件夹「$folderName」指定本地保存位置',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: Icon(
+                    !hasCustomOverride ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                    color: !hasCustomOverride ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  ),
+                  title: const Text('自动规则（推荐）'),
+                  subtitle: const Text('自动匹配同名共享文件夹或存入默认接收目录'),
+                  onTap: () async {
+                    await app.removePeerFolderOverride(deviceId, folderName);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+                if (app.settings.shareDirs.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, top: 12, bottom: 4),
+                    child: Text(
+                      '指定为某个共享目录：',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  for (final shareDir in app.settings.shareDirs)
+                    ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      leading: Icon(
+                        currentCustomDir == shareDir ? Icons.radio_button_checked : Icons.folder_outlined,
+                        color: currentCustomDir == shareDir ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                      ),
+                      title: Text(p.basename(shareDir), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(shareDir, style: const TextStyle(fontSize: 12)),
+                      onTap: () async {
+                        await app.setPeerFolderOverride(deviceId, folderName, shareDir);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                    ),
+                ],
+                const SizedBox(height: 8),
+                ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  tileColor: colorScheme.surfaceContainerHigh,
+                  leading: Icon(Icons.create_new_folder_outlined, color: colorScheme.primary),
+                  title: const Text('选择其他本地目录…', style: TextStyle(fontWeight: FontWeight.w600)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    final path = await effectivePicker.pickDirectory(ctx);
+                    if (path != null && path.isNotEmpty) {
+                      await app.setPeerFolderOverride(deviceId, folderName, path);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildFolderSliverGroup(
     SelectionModel m,
     String folderName,
@@ -338,7 +483,18 @@ class _SelectPageState extends State<SelectPage> {
   ) {
     final isExpanded = _expandedFolders.contains(folderName);
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final app = context.watch<AppState>();
+    final peerOverrides = app.settings.peerFolderOverrides[widget.device.deviceId];
+    final folderKey = folderName.toLowerCase();
+    final hasCustomOverride =
+        peerOverrides != null && peerOverrides.containsKey(folderKey) && peerOverrides[folderKey]!.isNotEmpty;
+    final resolvedTargetDir = resolveTargetDir(
+      folderName,
+      _folderIndex,
+      app.settings.defaultRecvDir,
+      peerDeviceId: widget.device.deviceId,
+      peerFolderOverrides: app.settings.peerFolderOverrides,
+    );
 
     return SliverMainAxisGroup(
       slivers: [
@@ -351,6 +507,8 @@ class _SelectPageState extends State<SelectPage> {
             selectedCount: m.selectedCountIn(folderName),
             isFullySelected: m.folderFullySelected(folderName),
             isExpanded: isExpanded,
+            hasCustomOverride: hasCustomOverride,
+            resolvedTargetDir: resolvedTargetDir,
             onToggleSelect: () => m.toggleFolder(folderName),
             onToggleExpand: () {
               setState(() {
@@ -361,6 +519,12 @@ class _SelectPageState extends State<SelectPage> {
                 }
               });
             },
+            onTapTargetDir: () => _showTargetDirPickerBottomSheet(
+              context,
+              folderName,
+              resolvedTargetDir,
+              hasCustomOverride,
+            ),
             theme: theme,
           ),
         ),
@@ -376,14 +540,14 @@ class _SelectPageState extends State<SelectPage> {
 
                   return Material(
                     color: isSelected
-                        ? colorScheme.primaryContainer.withAlpha(45)
-                        : colorScheme.surface,
+                        ? theme.colorScheme.primaryContainer.withAlpha(45)
+                        : theme.colorScheme.surface,
                     shape: RoundedRectangleBorder(
                       borderRadius: isLast
                           ? const BorderRadius.vertical(bottom: Radius.circular(16))
                           : BorderRadius.zero,
                       side: BorderSide(
-                        color: colorScheme.outlineVariant.withAlpha(50),
+                        color: theme.colorScheme.outlineVariant.withAlpha(50),
                         width: 0.5,
                       ),
                     ),
@@ -399,7 +563,7 @@ class _SelectPageState extends State<SelectPage> {
                               children: [
                                 _buildFileIconAvatar(
                                   f,
-                                  colorScheme,
+                                  theme.colorScheme,
                                   onTapPreview: isImageFile(f.name) ? () => _showImagePreview(f) : null,
                                 ),
                                 const SizedBox(width: 12),
@@ -422,7 +586,7 @@ class _SelectPageState extends State<SelectPage> {
                                       Text(
                                         formatBytes(f.size),
                                         style: TextStyle(
-                                          color: colorScheme.onSurfaceVariant,
+                                          color: theme.colorScheme.onSurfaceVariant,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -444,7 +608,7 @@ class _SelectPageState extends State<SelectPage> {
                               height: 1,
                               indent: 56,
                               endIndent: 12,
-                              color: colorScheme.outlineVariant.withAlpha(40),
+                              color: theme.colorScheme.outlineVariant.withAlpha(40),
                             ),
                         ],
                       ),
@@ -530,8 +694,11 @@ class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.selectedCount,
     required this.isFullySelected,
     required this.isExpanded,
+    required this.hasCustomOverride,
+    required this.resolvedTargetDir,
     required this.onToggleSelect,
     required this.onToggleExpand,
+    required this.onTapTargetDir,
     required this.theme,
   });
 
@@ -541,8 +708,11 @@ class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
   final int selectedCount;
   final bool isFullySelected;
   final bool isExpanded;
+  final bool hasCustomOverride;
+  final String resolvedTargetDir;
   final VoidCallback onToggleSelect;
   final VoidCallback onToggleExpand;
+  final VoidCallback onTapTargetDir;
   final ThemeData theme;
 
   @override
@@ -555,6 +725,7 @@ class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     final colorScheme = theme.colorScheme;
     final isPinned = overlapsContent || shrinkOffset > 0;
+    final targetBasename = p.basename(resolvedTargetDir);
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -658,6 +829,53 @@ class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
                     ],
                   ),
                 ),
+                InkWell(
+                  onTap: onTapTargetDir,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: hasCustomOverride
+                          ? colorScheme.primaryContainer
+                          : colorScheme.surface.withAlpha(200),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: hasCustomOverride
+                            ? colorScheme.primary.withAlpha(140)
+                            : colorScheme.outlineVariant.withAlpha(80),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          hasCustomOverride ? Icons.push_pin_rounded : Icons.folder_open_outlined,
+                          size: 13,
+                          color: hasCustomOverride
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 85),
+                          child: Text(
+                            targetBasename.isEmpty ? '未设置' : targetBasename,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: hasCustomOverride ? FontWeight.bold : FontWeight.w500,
+                              color: hasCustomOverride
+                                  ? colorScheme.onPrimaryContainer
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   constraints: const BoxConstraints.tightFor(width: 36, height: 36),
                   padding: EdgeInsets.zero,
@@ -687,6 +905,8 @@ class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.selectedCount != selectedCount ||
         oldDelegate.isFullySelected != isFullySelected ||
         oldDelegate.isExpanded != isExpanded ||
+        oldDelegate.hasCustomOverride != hasCustomOverride ||
+        oldDelegate.resolvedTargetDir != resolvedTargetDir ||
         oldDelegate.theme != theme;
   }
 }

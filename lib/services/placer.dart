@@ -30,7 +30,23 @@ Future<Map<String, String>> buildFolderIndex(List<String> shareDirs) async {
   return index;
 }
 
-/// 命中同名目录（不区分大小写）则返回其路径，否则返回默认接收目录。
-String resolveTargetDir(String folderName, Map<String, String> folderIndex, String defaultRecvDir) {
-  return folderIndex[folderName.toLowerCase()] ?? defaultRecvDir;
+/// 命中指定设备级映射目录（不区分大小写，最高优先级），次之命中同名目录，否则返回默认接收目录。
+String resolveTargetDir(
+  String folderName,
+  Map<String, String> folderIndex,
+  String defaultRecvDir, {
+  String? peerDeviceId,
+  Map<String, Map<String, String>>? peerFolderOverrides,
+}) {
+  final folderKey = folderName.toLowerCase();
+  if (peerDeviceId != null && peerFolderOverrides != null) {
+    final overrides = peerFolderOverrides[peerDeviceId];
+    if (overrides != null && overrides.containsKey(folderKey)) {
+      final overridePath = overrides[folderKey];
+      if (overridePath != null && overridePath.isNotEmpty) {
+        return overridePath;
+      }
+    }
+  }
+  return folderIndex[folderKey] ?? defaultRecvDir;
 }
