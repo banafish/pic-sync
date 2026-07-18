@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/device.dart';
 import '../models/manifest.dart';
 import '../services/http_client.dart';
+import '../services/media_types.dart';
 import '../services/sync_engine.dart';
 import 'app_state.dart';
 import 'format.dart';
@@ -66,6 +67,130 @@ class _SelectPageState extends State<SelectPage> {
     );
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => ProgressPage(engine: engine, files: _model!.selectedFiles)));
+  }
+
+  void _showImagePreview(ManifestFile f) {
+    if (_data == null) return;
+    final client = _data!.client;
+    final url = Uri.parse('http://${client.host}:${client.port}/file')
+        .replace(queryParameters: {'path': f.path}).toString();
+    final headers = client.token != null ? {'X-PicSync-Token': client.token!} : <String, String>{};
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.black.withAlpha(230),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.black.withAlpha(100),
+                child: Row(
+                  children: [
+                    const Icon(Icons.image_rounded, color: Colors.white70, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        f.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      formatBytes(f.size),
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      tooltip: '关闭',
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+                    minHeight: 200,
+                  ),
+                  width: double.infinity,
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.network(
+                      url,
+                      headers: headers,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        final total = loadingProgress.expectedTotalBytes;
+                        final loaded = loadingProgress.cumulativeBytesLoaded;
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(
+                                value: total != null && total > 0 ? loaded / total : null,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                total != null && total > 0
+                                    ? '${formatBytes(loaded)} / ${formatBytes(total)}'
+                                    : '正在加载预览…',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.broken_image_rounded, size: 48, color: Colors.white54),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  '无法加载图片预览',
+                                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$error',
+                                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -277,7 +402,11 @@ class _SelectPageState extends State<SelectPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             child: Row(
                               children: [
-                                _buildFileIconAvatar(f.name, colorScheme),
+                                _buildFileIconAvatar(
+                                  f,
+                                  colorScheme,
+                                  onTapPreview: isImageFile(f.name) ? () => _showImagePreview(f) : null,
+                                ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -335,7 +464,12 @@ class _SelectPageState extends State<SelectPage> {
     );
   }
 
-  Widget _buildFileIconAvatar(String name, ColorScheme colorScheme) {
+  Widget _buildFileIconAvatar(
+    ManifestFile file,
+    ColorScheme colorScheme, {
+    VoidCallback? onTapPreview,
+  }) {
+    final name = file.name;
     final lower = name.toLowerCase();
     IconData icon;
     Color bg;
@@ -348,12 +482,7 @@ class _SelectPageState extends State<SelectPage> {
       icon = Icons.movie_rounded;
       bg = Colors.purple.withAlpha(25);
       fg = Colors.purple;
-    } else if (lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        lower.endsWith('.png') ||
-        lower.endsWith('.gif') ||
-        lower.endsWith('.webp') ||
-        lower.endsWith('.heic')) {
+    } else if (isImageFile(name)) {
       icon = Icons.image_rounded;
       bg = colorScheme.primary.withAlpha(25);
       fg = colorScheme.primary;
@@ -370,7 +499,7 @@ class _SelectPageState extends State<SelectPage> {
       fg = Colors.orange;
     }
 
-    return Container(
+    final avatarBox = Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
@@ -379,6 +508,22 @@ class _SelectPageState extends State<SelectPage> {
       ),
       child: Icon(icon, size: 20, color: fg),
     );
+
+    if (onTapPreview != null) {
+      return Tooltip(
+        message: '点击预览图片',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTapPreview,
+            borderRadius: BorderRadius.circular(10),
+            child: avatarBox,
+          ),
+        ),
+      );
+    }
+
+    return avatarBox;
   }
 }
 
