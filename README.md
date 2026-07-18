@@ -9,15 +9,30 @@
 - 落盘位置：优先放进本机与「对方文件所在文件夹」**同名**的文件夹；没有则放**默认接收目录**
 - 删除不会传播：一边删了，再次同步还会拉回来（目标是"到处都有"）
 
-## 构建
+## 构建与打包
 
 前置：Flutter stable；Windows 构建需 Visual Studio C++ 桌面工作负载；Android 构建需 Android SDK。
+
+### 编译 Release
 
 ```bash
 flutter pub get
 flutter build windows --release   # 产物 build/windows/x64/runner/Release/
 flutter build apk --split-per-abi  # 按架构拆包产物 build/app/outputs/flutter-apk/app-arm64-v8a-release.apk 等
 ```
+
+### PC端（Windows）打包安装文件
+
+**1. MSIX 安装包（已配置）**
+利用已集成的 `msix` 工具生成标准的 Windows 安装文件：
+```bash
+dart run msix:create                      # 编译并打包生成 build/windows/x64/runner/Release/pic_sync.msix
+dart run msix:create --build-windows false # 免重新编译，直接使用现有 Release 产物打包
+```
+
+**2. Inno Setup（生成 .exe 安装程序）**
+使用 [Inno Setup](https://jrsoftware.org/isinfo.php) 导入 `build/windows/x64/runner/Release/` 目录中的主程序 `pic_sync.exe`、相关动态库（.dll）及 `data` 目录即可编译为单文件安装程序（setup.exe）。
+
 
 ## 使用
 

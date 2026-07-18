@@ -55,6 +55,17 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.4
+  msix: ^3.16.8
+
+msix_config:
+  display_name: PicSync
+  publisher_display_name: PicSync
+  identity_name: com.picsync.app
+  msix_version: 1.0.0.0
+  logo_path: assets/icon/app_icon.png
+  install_certificate: false
+
+
 
 flutter_launcher_icons:
   android: "ic_launcher"
