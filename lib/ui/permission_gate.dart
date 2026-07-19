@@ -93,9 +93,7 @@ class _PermissionGateState extends State<PermissionGate> with WidgetsBindingObse
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: const StadiumBorder(),
                       ),
                       onPressed: () async {
                         await Permission.manageExternalStorage.request();
