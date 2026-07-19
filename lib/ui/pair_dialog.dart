@@ -64,7 +64,7 @@ class _PairDialogState extends State<PairDialog> {
         OutlinedButton(
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: const StadiumBorder(),
           ),
           onPressed: () => Navigator.of(context).pop(false),
           child: const Text('拒绝'),
@@ -72,7 +72,7 @@ class _PairDialogState extends State<PairDialog> {
         FilledButton(
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: const StadiumBorder(),
           ),
           onPressed: () => Navigator.of(context).pop(true),
           child: const Text('同意'),
